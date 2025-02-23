@@ -1,0 +1,20 @@
+# ecr.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to create ECR repository for Lambda List App'
+
+Parameters:
+  RepositoryName:
+    Type: String
+    Default: lambda-list-app
+    Description: Name of the ECR repository
+
+Resources:
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+
+Outputs:
+  RepositoryURI:
+    Description: URI of the ECR repository
+    Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RepositoryName}

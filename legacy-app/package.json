@@ -1,0 +1,25 @@
+{
+  "name": "legacy-app",
+  "version": "1.0.0",
+  "description": "Legacy express app",
+  "main": "index.js",
+  "scripts": {
+    "build": "docker build -t lambda-list-app . ",
+    "start": " node  --require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register index.mjs",
+    "docker:start": "docker run -p 3000:3000 lambda-list-app",
+    "aws:authenticate": "aws ecr get-login-password | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$(aws configure get region).amazonaws.com",
+    "aws:push": "ECR_REPO=$(aws cloudformation describe-stacks --stack-name lambda-list-app-ecr --query 'Stacks[0].Outputs[0].OutputValue' --output text) && docker tag lambda-list-app:latest $ECR_REPO:latest && docker push $ECR_REPO:latest",
+    "aws:deploy": "npm-run-all build aws:authenticate aws:push"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-lambda": "^3.750.0",
+    "@aws/aws-distro-opentelemetry-node-autoinstrumentation": "^0.5.0",
+    "express": "^4.21.2",
+    "pino": "^9.6.0"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}

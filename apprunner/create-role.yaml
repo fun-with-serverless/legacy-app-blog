@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'IAM Role for App Runner Service with Lambda List permissions'
+
+Resources:
+  AppRunnerTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AppRunnerLambdaListRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: tasks.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: LambdaListPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:ListFunctions
+                Resource: '*'
+
+Outputs:
+  RoleARN:
+    Description: ARN of the created IAM Role
+    Value: !GetAtt AppRunnerTaskRole.Arn
