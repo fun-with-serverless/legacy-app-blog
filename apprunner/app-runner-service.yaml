@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for AppRunner service with ECR integration, auto-scaling, observability, and health checks'
+
+Parameters:
+  ECRStackName:
+    Type: String
+    Description: The name of the CloudFormation stack that contains the ECR repository
+    Default: 'lambda-list-app-ecr'
+
+Resources:
+  # AppRunner Service IAM Role
+  AppRunnerServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: build.apprunner.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess'
+  
+  AppRunnerTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AppRunnerLambdaListRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: tasks.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: LambdaListPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:ListFunctions
+                Resource: '*'
+
+  # Auto Scaling Configuration
+  ListAppScaleConf:
+    Type: AWS::AppRunner::AutoScalingConfiguration
+    Properties:
+      AutoScalingConfigurationName: ListAppScaleConf
+      MaxConcurrency: 100
+      MaxSize: 10
+      MinSize: 1
+      Tags:
+        - Key: Name
+          Value: ListAppScaleConf
+
+  # Observability Configuration
+  ListAppObservabilityConf:
+    Type: AWS::AppRunner::ObservabilityConfiguration
+    Properties:
+      ObservabilityConfigurationName: ListAppObservabilityConf
+      TraceConfiguration:
+        Vendor: AWSXRAY
+
+  # AppRunner Service
+  AppRunnerService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: ListLambdas
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt AppRunnerServiceRole.Arn
+        AutoDeploymentsEnabled: true
+        ImageRepository:
+          ImageRepositoryType: ECR
+          ImageIdentifier:
+            Fn::Join:
+              - ':'
+              - - Fn::ImportValue:
+                    Fn::Sub: '${ECRStackName}-RepositoryURI'
+                - 'latest'
+          ImageConfiguration:
+            Port: 3000
+            
+      HealthCheckConfiguration:
+        Path: /health-check
+        Protocol: HTTP
+        HealthyThreshold: 3
+        UnhealthyThreshold: 3
+        Interval: 10
+        Timeout: 5
+      AutoScalingConfigurationArn: !GetAtt ListAppScaleConf.AutoScalingConfigurationArn
+      ObservabilityConfiguration:
+        ObservabilityEnabled: true
+        ObservabilityConfigurationArn: !GetAtt ListAppObservabilityConf.ObservabilityConfigurationArn
+      InstanceConfiguration:
+        Cpu: '0.25 vCPU'
+        Memory: '0.5 GB'
+        InstanceRoleArn: !GetAtt AppRunnerTaskRole.Arn
+        
+Outputs:
+  ServiceId:
+    Description: The AppRunner Service ID
+    Value: !GetAtt AppRunnerService.ServiceId
+  ServiceURL:
+    Description: The URL of the AppRunner Service
+    Value: !GetAtt AppRunnerService.ServiceUrl
+  ServiceARN:
+    Description: The ARN of the AppRunner Service
+    Value: !GetAtt AppRunnerService.ServiceArn

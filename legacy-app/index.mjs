@@ -2,10 +2,7 @@
 import express from 'express';
 import { LambdaClient, ListFunctionsCommand } from '@aws-sdk/client-lambda';
 
-
 import pino from 'pino';
-
-
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -16,6 +13,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const lambdaClient = new LambdaClient({});
+
+
+app.get('/health-check', async (req, res) => {
+  res.sendStatus(200);
+});
 
 app.get('/lambdas', async (req, res) => {
   try {

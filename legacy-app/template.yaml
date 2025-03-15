@@ -18,3 +18,5 @@ Outputs:
   RepositoryURI:
     Description: URI of the ECR repository
     Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${RepositoryName}
+    Export:
+      Name: !Sub "${AWS::StackName}-RepositoryURI"
