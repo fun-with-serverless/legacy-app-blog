@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  GetLambdasLWA:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        Command: ['node', 'index.mjs']
+      MemorySize: 512
+      Timeout: 30
+      Architectures:
+        - x86_64
+      FunctionUrlConfig:
+        AuthType: NONE
+        InvokeMode: BUFFERED
+      Policies:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: lambda:ListFunctions
+            Resource: '*'
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: .
+      DockerTag: latest
+
+Outputs:
+  GetLambdasLWAFunctionUrl:
+    Description: "Lambda Function URL"
+    Value: !GetAtt GetLambdasLWAUrl.FunctionUrl
