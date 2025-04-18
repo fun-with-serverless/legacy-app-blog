@@ -5,3 +5,4 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.0 /lambda-adapter /opt
 
 # The original app listens on port 3000, we need to tell Lambda Web Adapter about it
 ENV PORT=3000
+ENV READINESS_CHECK_PATH=/health-check
